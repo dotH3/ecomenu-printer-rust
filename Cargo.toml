@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+printers = "2.1.2"
+warp = "0.3.7"
+tokio = { version = "1", features = ["full"] }
