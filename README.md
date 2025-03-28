@@ -1,16 +1,17 @@
 # ecomenu-printer
 
-Aplicación nativa escrita en Rust para manejar impresoras a través de solicitudes HTTP. Está diseñada específicamente para integrarse con el SaaS **Ecomenu**, permitiendo realizar impresiones de manera eficiente y escalable.
+ Native application written in Rust to manage printers through HTTP requests. It’s designed specifically to be integrated with the software Ecomenu, allowing us to print in an efficient and scalable way.
 
-## Características
+## Features
 
-- 🖨️ Manejo de impresoras locales y en red.
-- 🌐 API HTTP para gestionar solicitudes de impresión.
-- ⚡️ Mayor rendimiento gracias a Rust.
-- 🔄 Multiplataforma: Windows, iOS y GNU.
-- 🍔 Optimizado para integrarse con **Ecomenu**
-  
+- 🖨️ Management of local and network printers.
+- 🌐 HTTP API to manage print requests.
+- ⚡️ Enhanced performance thanks to Rust.
+- 🔄 Multiplatform: Windows, iOS, and GNU.
+- 🍔 Optimized for integration with **Ecomenu**.
+
 ## Endpoints
 
-- **GET /printer-list**: lista de impresoras configuradas en el sistema.
-- **POST /print**: imprimir HTML (requiere parámetros: printerName, height, width, zoom).
+- **GET /printer-list**: List of printers configured in the system.
+- **POST /print**: Print HTML (requires parameters: printerName, height, width, zoom).
+
