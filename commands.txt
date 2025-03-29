@@ -1,0 +1,2 @@
+-- COMPILAMOS PARA WINDOWS DESDE LINUX
+cargo build --target x86_64-pc-windows-gnu 
