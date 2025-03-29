@@ -12,6 +12,8 @@
 
 ## Endpoints
 
-- **GET /printer-list**: List of printers configured in the system.
-- **POST /print**: Print HTML (requires parameters: printerName, height, width, zoom).
-
+| Method | Endpoint         | Description                             | Required Body Parameters                   |
+|--------|------------------|-----------------------------------------|---------------------------------------|
+| GET    | `/hello`    | Returns `"Hi"`                    | None                                |
+| GET    | `/printer-list`  | Lists printers configured in the system.| None                                  |
+| POST   | `/print`         | Prints HTML                             | `printerName`, `height`, `width`, `zoom` |
