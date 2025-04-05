@@ -1,2 +1,6 @@
 -- COMPILAMOS PARA WINDOWS DESDE LINUX
 cargo build --target x86_64-pc-windows-gnu 
+
+
+-- Alternativa mac os
+https://formulae.brew.sh/formula/ghostscript
