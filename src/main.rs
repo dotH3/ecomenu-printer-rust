@@ -14,10 +14,15 @@ async fn main() {
     let print_route = warp::path("print")
         .and(warp::post())
         .and(warp::body::json())
-        .map(handlers::print_request);
+        .and_then(handlers::print_request);
+
+    let example_route = warp::path("example")
+        .and(warp::post())
+        .and(warp::body::json())
+        .and_then(handlers::example_handler);
 
     println!("[Running process]");
 
-    let routes = hello_route.or(list_route).or(print_route);
+    let routes = hello_route.or(list_route).or(print_route).or(example_route);
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
