@@ -72,26 +72,38 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
     ok("OK")
 }
 
+
+
 pub async fn upload_file(form: warp::multipart::FormData) -> Result<impl warp::Reply, warp::Rejection> {
     use futures::TryStreamExt;
     use warp::Buf;
+    use std::fs::File;
+    use std::io::Write;
 
     form.try_for_each(|mut part| async move {
         let name = part.name().to_string();
         let filename = part.filename().unwrap_or("-").to_string();
-        let mut size = 0;
-    
-        while let Some(Ok(chunk)) = part.data().await {
-            size += chunk.remaining();
+
+        if name == "pdf" {
+            let mut data = Vec::new();
+
+            while let Some(Ok(chunk)) = part.data().await {
+                data.extend_from_slice(chunk.chunk());
+            }
+
+            if let Ok(mut file) = File::create("output.pdf") {
+                let _ = file.write_all(&data);
+            }
+
+            println!("Field: {name}, Filename: {filename}, Bytes: {}, Is file: true", data.len());
         }
-    
-        println!("Field: {name}, Filename: {filename}, Bytes: {size}");
+
         Ok(())
     }).await.ok();
-    
 
     ok("OK")
 }
+
 
 
 
