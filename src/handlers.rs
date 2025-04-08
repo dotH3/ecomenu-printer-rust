@@ -1,4 +1,5 @@
-use printers::{get_printer_by_name,get_printers};
+use crate::utils::{bad_request, generate_random_pdf_name, ok};
+use printers::{get_printer_by_name, get_printers};
 use serde_json::json;
 use warp::reply::Json;
 
@@ -29,7 +30,7 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
 
     let body_printer_name = body.get("printerName");
     let _body_pdf = body.get("pdf");
-    
+
     if body_printer_name.is_none() {
         return bad_request("Missing 'printerName'");
     }
@@ -72,57 +73,112 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
     ok("OK")
 }
 
-
-
-pub async fn upload_file(form: warp::multipart::FormData) -> Result<impl warp::Reply, warp::Rejection> {
+pub async fn upload_file(
+    form: warp::multipart::FormData,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    println!("Received upload request");
     use futures::TryStreamExt;
+    use std::{
+        fs::File,
+        io::Write,
+        sync::{Arc, Mutex},
+    };
     use warp::Buf;
-    use std::fs::File;
-    use std::io::Write;
 
-    form.try_for_each(|mut part| async move {
-        let name = part.name().to_string();
-        let filename = part.filename().unwrap_or("-").to_string();
+    let pdf_name = Arc::new(Mutex::new(None));
+    let printer_name = Arc::new(Mutex::new(None));
+    let pdf_name_clone = pdf_name.clone();
+    let printer_name_clone = printer_name.clone();
 
-        if name == "pdf" {
-            let mut data = Vec::new();
+    form.try_for_each(move |mut part| {
+        let pdf_name_clone = pdf_name_clone.clone();
+        let printer_name_clone = printer_name_clone.clone();
+        async move {
+            let name = part.name().to_string();
 
-            while let Some(Ok(chunk)) = part.data().await {
-                data.extend_from_slice(chunk.chunk());
+            if name == "pdf" {
+                let filename = generate_random_pdf_name();
+                let mut data = Vec::new();
+                while let Some(Ok(chunk)) = part.data().await {
+                    data.extend_from_slice(chunk.chunk());
+                }
+
+                let final_name = format!("{}.pdf", filename);
+                if let Ok(mut file) = File::create(&final_name) {
+                    let _ = file.write_all(&data);
+                }
+
+                *pdf_name_clone.lock().unwrap() = Some(final_name.clone());
             }
 
-            if let Ok(mut file) = File::create("output.pdf") {
-                let _ = file.write_all(&data);
+            if name == "printer_name" {
+                let mut data = Vec::new();
+                while let Some(Ok(chunk)) = part.data().await {
+                    data.extend_from_slice(chunk.chunk());
+                }
+
+                let value = String::from_utf8_lossy(&data).to_string();
+                *printer_name_clone.lock().unwrap() = Some(value);
             }
 
-            println!("Field: {name}, Filename: {filename}, Bytes: {}, Is file: true", data.len());
+            Ok(())
         }
+    })
+    .await
+    .ok();
 
-        Ok(())
-    }).await.ok();
+    println!("!");
+    println!("pdf name {pdf_name}");
 
-    ok("OK")
-}
-
-
+    let final_pdf_name = pdf_name.lock().unwrap().clone();
+    let final_printer_name = printer_name.lock().unwrap().clone();
 
 
+    if final_printer_name.is_none() {
+        return bad_request("Missing 'printer_name'");
+    }
 
-//? Funciones internas
+    let printer = get_printer_by_name(final_printer_name.as_ref().unwrap());
 
-pub async fn example_handler(body: serde_json::Value) -> Result<impl warp::Reply, warp::Rejection> {
-    if body.get("someField").is_none() {
-        return bad_request("Missing someField");
+    if printer.is_none() {
+        return bad_request("Printer not found");
+    }
+
+
+    println!("Pdf Guardado: {:?}", final_pdf_name);
+    println!("Printer Name: {:?}", final_printer_name);
+
+    //? A este punto del codigo, ya deberiamos de tener el nombre del archivo e impresora
+    //? Lo que significa que podemos realizar la impresion
+
+    println!("Iniciando la impresion...");
+
+    let gs_cmd = if cfg!(target_os = "windows") {
+        "gswin64c"
+    } else {
+        "gs"
+    };
+
+    let output = std::process::Command::new(gs_cmd)
+        .args([
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-sDEVICE=mswinpr2",
+            "-sPAPERSIZE=custom",
+            "-dFIXEDMEDIA",
+            "-dDEVICEWIDTHPOINTS=165",
+            "-dDEVICEHEIGHTPOINTS=600",
+            "-sOutputFile=%printer%POS-58",
+            "-dFitPage",
+            final_pdf_name.as_ref().unwrap()
+        ])
+        .output();
+
+    match output {
+        Ok(out) if out.status.success() => println!("Printed successfully."),
+        Ok(out) => println!("Error: {:?}", String::from_utf8_lossy(&out.stderr)),
+        Err(e) => println!("Failed to execute command: {}", e),
     }
 
     ok("OK")
-}
-
-//? Funciones de respuesta
-fn bad_request(msg: &str) -> Result<warp::reply::WithStatus<String>, warp::Rejection> {
-    Ok(warp::reply::with_status(msg.to_string(), warp::http::StatusCode::BAD_REQUEST))
-}
-
-fn ok(msg: &str) -> Result<warp::reply::WithStatus<String>, warp::Rejection> {
-    Ok(warp::reply::with_status(msg.to_string(), warp::http::StatusCode::OK))
 }

@@ -1,4 +1,6 @@
 mod handlers;
+mod utils;
+
 use warp::Filter;
 
 #[tokio::main]
@@ -15,12 +17,6 @@ async fn main() {
         .and(warp::post())
         .and(warp::body::json())
         .and_then(handlers::print_request);
-
-    let example_route = warp::path("example")
-        .and(warp::post())
-        .and(warp::body::json())
-        .and_then(handlers::example_handler);
-
     let upload_route = warp::path("upload")
         .and(warp::post())
         .and(warp::multipart::form())
@@ -31,7 +27,6 @@ async fn main() {
     let routes = hello_route
         .or(list_route)
         .or(print_route)
-        .or(example_route)
         .or(upload_route);
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
