@@ -21,8 +21,17 @@ async fn main() {
         .and(warp::body::json())
         .and_then(handlers::example_handler);
 
+    let upload_route = warp::path("upload")
+        .and(warp::post())
+        .and(warp::multipart::form())
+        .and_then(handlers::upload_file);
+
     println!("[Running process]");
 
-    let routes = hello_route.or(list_route).or(print_route).or(example_route);
+    let routes = hello_route
+        .or(list_route)
+        .or(print_route)
+        .or(example_route)
+        .or(upload_route);
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
