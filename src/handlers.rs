@@ -77,6 +77,7 @@ pub async fn upload_file(
     form: warp::multipart::FormData,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     println!("Received upload request");
+
     use futures::TryStreamExt;
     use std::{
         fs::File,
@@ -127,12 +128,12 @@ pub async fn upload_file(
     .await
     .ok();
 
-    println!("!");
-    println!("pdf name {pdf_name}");
-
     let final_pdf_name = pdf_name.lock().unwrap().clone();
     let final_printer_name = printer_name.lock().unwrap().clone();
 
+    if final_pdf_name.is_none() {
+        return bad_request("Missing 'pdf' file");
+    }
 
     if final_printer_name.is_none() {
         return bad_request("Missing 'printer_name'");
@@ -144,14 +145,8 @@ pub async fn upload_file(
         return bad_request("Printer not found");
     }
 
-
-    println!("Pdf Guardado: {:?}", final_pdf_name);
-    println!("Printer Name: {:?}", final_printer_name);
-
     //? A este punto del codigo, ya deberiamos de tener el nombre del archivo e impresora
     //? Lo que significa que podemos realizar la impresion
-
-    println!("Iniciando la impresion...");
 
     let gs_cmd = if cfg!(target_os = "windows") {
         "gswin64c"
@@ -168,17 +163,23 @@ pub async fn upload_file(
             "-dFIXEDMEDIA",
             "-dDEVICEWIDTHPOINTS=165",
             "-dDEVICEHEIGHTPOINTS=600",
-            "-sOutputFile=%printer%POS-58",
+            format!("-sOutputFile=%printer%{}",final_printer_name.unwrap()).to_string().as_str(),
             "-dFitPage",
-            final_pdf_name.as_ref().unwrap()
+            final_pdf_name.as_ref().unwrap(),
         ])
         .output();
 
-    match output {
-        Ok(out) if out.status.success() => println!("Printed successfully."),
-        Ok(out) => println!("Error: {:?}", String::from_utf8_lossy(&out.stderr)),
-        Err(e) => println!("Failed to execute command: {}", e),
-    }
-
-    ok("OK")
+        match output {
+            Ok(out) => {
+                let stderr = String::from_utf8_lossy(&out.stderr);
+                if out.status.success() && !stderr.contains("Error") && !stderr.contains("invalid") {
+                    let _ = std::fs::remove_file(final_pdf_name.unwrap());
+                    ok("Printed successfully")
+                } else {
+                    bad_request(&format!("Ghostscript error: {}", stderr))
+                }
+            }
+            Err(e) => bad_request(&format!("Failed to execute command: {}", e)),
+        }
+        
 }

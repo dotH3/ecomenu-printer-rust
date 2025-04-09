@@ -7,6 +7,8 @@ use warp::Filter;
 async fn main() {
     let port = 3005;
 
+    println!("[Starting] v0.0.1-alpha (:{})",port);
+
     let hello_route = warp::path!("hello" / String)
         .and(warp::header::<String>("user-agent"))
         .map(handlers::hello);
