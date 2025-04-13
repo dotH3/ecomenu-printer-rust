@@ -1,4 +1,4 @@
-use crate::utils::{bad_request, generate_random_pdf_name, ok};
+use crate::{log_and_print, utils::{bad_request, generate_random_pdf_name, ok}};
 use printers::{get_printer_by_name, get_printers};
 use serde_json::json;
 use warp::reply::Json;
@@ -21,12 +21,12 @@ pub fn get_printer_list() -> Json {
 }
 
 pub fn hello(param: String, agent: String) -> String {
-    println!("Received request from {} with param {}", agent, param);
+    log_and_print(&format!("Received request from {} with param {}", agent, param));
     format!("Hi, {}!", param)
 }
 
 pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, warp::Rejection> {
-    println!("Received request with body: {:?}", body);
+    log_and_print(&format!("Received request with body: {:?}", body));
 
     let body_printer_name = body.get("printerName");
     let _body_pdf = body.get("pdf");
@@ -47,7 +47,7 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
         "gs"
     };
 
-    println!("-sOutputFile=%printer%{}", printer.unwrap().system_name);
+    log_and_print(&format!("-sOutputFile=%printer%{}", printer.unwrap().system_name));
 
     let output = std::process::Command::new(gs_cmd)
         .args([
@@ -65,9 +65,9 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
         .output();
 
     match output {
-        Ok(out) if out.status.success() => println!("Printed successfully."),
-        Ok(out) => println!("Error: {:?}", String::from_utf8_lossy(&out.stderr)),
-        Err(e) => println!("Failed to execute command: {}", e),
+        Ok(out) if out.status.success() => log_and_print("Printed successfully."),
+        Ok(out) => log_and_print(&format!("Error: {:?}", String::from_utf8_lossy(&out.stderr))),
+        Err(e) => log_and_print(&format!("Failed to execute command: {}", e)),
     }
 
     ok("OK")
@@ -76,7 +76,7 @@ pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, 
 pub async fn upload_file(
     form: warp::multipart::FormData,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    println!("Received upload request");
+    log_and_print("Received upload request");
 
     use futures::TryStreamExt;
     use std::{
@@ -163,23 +163,24 @@ pub async fn upload_file(
             "-dFIXEDMEDIA",
             "-dDEVICEWIDTHPOINTS=165",
             "-dDEVICEHEIGHTPOINTS=600",
-            format!("-sOutputFile=%printer%{}",final_printer_name.unwrap()).to_string().as_str(),
+            format!("-sOutputFile=%printer%{}", final_printer_name.unwrap())
+                .to_string()
+                .as_str(),
             "-dFitPage",
             final_pdf_name.as_ref().unwrap(),
         ])
         .output();
 
-        match output {
-            Ok(out) => {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                if out.status.success() && !stderr.contains("Error") && !stderr.contains("invalid") {
-                    let _ = std::fs::remove_file(final_pdf_name.unwrap());
-                    ok("Printed successfully")
-                } else {
-                    bad_request(&format!("Ghostscript error: {}", stderr))
-                }
+    match output {
+        Ok(out) => {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            if out.status.success() && !stderr.contains("Error") && !stderr.contains("invalid") {
+                let _ = std::fs::remove_file(final_pdf_name.unwrap());
+                ok("Printed successfully")
+            } else {
+                bad_request(&format!("Ghostscript error: {}", stderr))
             }
-            Err(e) => bad_request(&format!("Failed to execute command: {}", e)),
         }
-        
+        Err(e) => bad_request(&format!("Failed to execute command: {}", e)),
+    }
 }
