@@ -7,6 +7,8 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+const VERSION: &str = "v0.0.2-alpha";
+
 fn log_and_print(message: &str) {
     // Get the current time
     let start = SystemTime::now();
@@ -44,28 +46,41 @@ async fn main() {
         return;
     }
 
-    log_and_print(&format!("[Starting] v0.0.1-alpha (:{})", port));
+    log_and_print(&format!("[Starting] {} (:{})", VERSION, port));
 
     let hello_route = warp::path!("hello" / String)
         .and(warp::header::<String>("user-agent"))
-        .map(handlers::hello);
+        .map(|name: String, user_agent: String| {
+            log_and_print(&format!("[Request] /hello/{} from {}", name, user_agent));
+            handlers::hello(name, user_agent)
+        });
 
-    let list_route = warp::path("printer-list").map(handlers::get_printer_list);
+    let list_route = warp::path("printer-list").map(|| {
+        log_and_print("[Request] /printer-list");
+        handlers::get_printer_list()
+    });
+
+    // let print_route = warp::path("print")
+    //     .and(warp::post())
+    //     .and(warp::body::json())
+    //     .and_then(|body| {
+    //         log_and_print("[Request] /print");
+    //         handlers::print_request(body)
+    //     });
 
     let print_route = warp::path("print")
         .and(warp::post())
-        .and(warp::body::json())
-        .and_then(handlers::print_request);
-    let upload_route = warp::path("upload")
-        .and(warp::post())
         .and(warp::multipart::form())
-        .and_then(handlers::upload_file);
+        .and_then(|form| {
+            log_and_print("[Request] /print");
+            handlers::print_request(form)
+        });
 
     log_and_print(&format!("[Running process]"));
 
     let routes = hello_route
         .or(list_route)
-        .or(print_route)
-        .or(upload_route);
+        .or(print_route);
+        // .or(upload_route);
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
