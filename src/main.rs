@@ -10,7 +10,7 @@ use std::{
 
 use warp::Filter;
 
-const VERSION: &str = "v0.0.3-alpha";
+const VERSION: &str = "v0.0.4-alpha";
 
 
 fn log_and_print(message: &str) {
