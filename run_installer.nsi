@@ -1,8 +1,10 @@
 !define APP_NAME "Ecomenu Printer"
 !define APP_EXE "ecomenu-printer.exe"
 !define BAT_NAME "run-hidden.bat"
+!define VERSION "v0.0.3-alpha" ; Define la versión aquí
 
-OutFile "EcomenuPrinter_Installer.exe"
+OutFile "EcomenuPrinter_Installer_${VERSION}.exe"  ; Incluye la versión en el nombre del archivo
+
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 RequestExecutionLevel admin
 
