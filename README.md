@@ -9,11 +9,11 @@
 - ⚡️ Enhanced performance thanks to Rust.
 - 🔄 Multiplatform: Windows, iOS, and GNU.
 - 🍔 Optimized for integration with **Ecomenu**.
+- 📜 Requires Ghostscript for PDF processing.
 
 ## Endpoints
 
-| Method | Endpoint         | Description                             | Required Body Parameters                   |
+| Method | Endpoint         | Description                             | Required Form-Data                   |
 |--------|------------------|-----------------------------------------|---------------------------------------|
-| GET    | `/hello`    | Returns `"Hi"`                    | None                                |
 | GET    | `/printer-list`  | Lists printers configured in the system.| None                                  |
-| POST   | `/print`         | Prints HTML                             | `printerName`, `height`, `width`, `zoom` |
+| POST   | `/print`         | Prints HTML                             | `printer_name`, `pdf` |
