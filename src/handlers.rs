@@ -82,6 +82,12 @@ pub async fn print_request(
         sync::{Arc, Mutex},
     };
     use warp::Buf;
+    use dirs;
+
+    let app_data_dir = dirs::data_local_dir()
+        .unwrap()
+        .join("EcomenuPrinter");
+    std::fs::create_dir_all(&app_data_dir).unwrap();
 
     let pdf_name = Arc::new(Mutex::new(None));
     let printer_name = Arc::new(Mutex::new(None));
@@ -91,6 +97,7 @@ pub async fn print_request(
     form.try_for_each(move |mut part| {
         let pdf_name_clone = pdf_name_clone.clone();
         let printer_name_clone = printer_name_clone.clone();
+        let app_data_dir = app_data_dir.clone();
         async move {
             let name = part.name().to_string();
 
@@ -101,12 +108,12 @@ pub async fn print_request(
                     data.extend_from_slice(chunk.chunk());
                 }
 
-                let final_name = format!("{}.pdf", filename);
+                let final_name = app_data_dir.join(format!("{}.pdf", filename));
                 if let Ok(mut file) = File::create(&final_name) {
                     let _ = file.write_all(&data);
                 }
 
-                *pdf_name_clone.lock().unwrap() = Some(final_name.clone());
+                *pdf_name_clone.lock().unwrap() = Some(final_name.to_string_lossy().to_string());
             }
 
             if name == "printer_name" {
@@ -160,7 +167,7 @@ pub async fn print_request(
             "-dFIXEDMEDIA",
             "-dDEVICEWIDTHPOINTS=165",
             "-dDEVICEHEIGHTPOINTS=600",
-            format!("-sOutputFile=%printer%a{}", final_printer_name.unwrap())
+            format!("-sOutputFile=%printer%{}", final_printer_name.unwrap())
                 .to_string()
                 .as_str(),
             "-dFitPage",

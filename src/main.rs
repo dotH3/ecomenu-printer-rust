@@ -1,36 +1,45 @@
 mod handlers;
 mod utils;
 
-use warp::Filter;
-use std::net::TcpListener;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fs::{create_dir_all, OpenOptions},
+    io::Write,
+    net::TcpListener,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-const VERSION: &str = "v0.0.2-alpha";
+use warp::Filter;
+
+const VERSION: &str = "v0.0.3-alpha";
+
 
 fn log_and_print(message: &str) {
-    // Get the current time
+
     let start = SystemTime::now();
     let since_the_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
-    // Convert to a human-readable format (YYYY-MM-DD HH:MM:SS)
     let seconds = since_the_epoch.as_secs();
     let days = seconds / 86400;
     let remaining_seconds = seconds % 86400;
     let hours = remaining_seconds / 3600;
     let minutes = (remaining_seconds % 3600) / 60;
     let seconds = remaining_seconds % 60;
-    let human_readable_date = format!("{}-{}-{} {}:{}:{}", 1970 + days / 365, (days % 365) / 30 + 1, days % 30 + 1, hours, minutes, seconds);
+    let human_readable_date = format!("{}-{:02}-{:02} {:02}:{:02}:{:02}",
+        1970 + days / 365, (days % 365) / 30 + 1, days % 30 + 1, hours, minutes, seconds);
 
-    // Print the message
     println!("{}", message);
 
-    // Append the message and date to a log file
+    let log_path = dirs::data_local_dir()
+        .unwrap()
+        .join("EcomenuPrinter")
+        .join("log.txt");
+
+    create_dir_all(log_path.parent().unwrap()).unwrap();
+
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("log.txt")
+        .open(log_path)
         .expect("Unable to open file");
 
     writeln!(file, "[{}] {}", human_readable_date, message).expect("Unable to write to file");
