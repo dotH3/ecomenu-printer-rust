@@ -11,7 +11,7 @@ use std::{
 use warp::http::Method;
 use warp::Filter;
 
-const VERSION: &str = "v0.0.4-alpha";
+const VERSION: &str = "v0.0.5-alpha";
 
 fn log_and_print(message: &str) {
     let start = SystemTime::now();
@@ -62,7 +62,7 @@ async fn main() {
         return;
     }
 
-    log_and_print(&format!("[Starting!3] {} (:{})", VERSION, port));
+    log_and_print(&format!("[Starting!] {} (:{})", VERSION, port));
 
     let hello_route = warp::path!("hello" / String)
         .and(warp::header::<String>("user-agent"))
@@ -77,12 +77,12 @@ async fn main() {
     });
 
     let print_route = warp::path("print")
-        .and(warp::post())
-        .and(warp::multipart::form())
-        .and_then(|form| {
-            log_and_print("[Request] /print");
-            handlers::print_request(form)
-        });
+    .and(warp::post())
+    .and(warp::multipart::form().max_length(500_000_000))
+    .and_then(|form| {
+        log_and_print("[Request] /print");
+        handlers::print_request(form)
+    });
 
     let print_options = warp::path("print").and(warp::options()).map(|| {
         log_and_print("[Request] OPTIONS /print");
