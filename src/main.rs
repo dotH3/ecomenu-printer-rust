@@ -11,7 +11,7 @@ use std::{
 use warp::http::Method;
 use warp::Filter;
 
-const VERSION: &str = "v0.0.5-alpha";
+const VERSION: &str = "v0.0.6-alpha";
 
 fn log_and_print(message: &str) {
     let start = SystemTime::now();
@@ -84,19 +84,21 @@ async fn main() {
         handlers::print_request(form)
     });
 
-    let print_options = warp::path("print").and(warp::options()).map(|| {
-        log_and_print("[Request] OPTIONS /print");
-        warp::reply()
-    });
-
-    log_and_print("[Running process]");
-
     let cors = warp::cors()
-        .allow_origin("https://test.ecomenuapp.com")
-        .allow_methods(&[Method::POST, Method::OPTIONS])
+        .allow_origins(vec![
+            "https://test.ecomenuapp.com",
+            "http://localhost:5173/",
+            "https://saas.ecomenuapp.com/"
+        ])
+        .allow_methods(&[Method::GET,Method::POST, Method::OPTIONS])
         .allow_headers(vec!["content-type", "token"]);
 
-    let routes = hello_route.or(list_route).or(print_route).with(cors);
+    let routes = hello_route
+    .or(list_route)
+    .or(print_route)
+    .with(cors);
+
+    log_and_print("[Running process]");
 
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
