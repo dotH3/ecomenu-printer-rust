@@ -8,15 +8,16 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use warp::http::Method;
 use warp::Filter;
 
 const VERSION: &str = "v0.0.4-alpha";
 
-
 fn log_and_print(message: &str) {
-
     let start = SystemTime::now();
-    let since_the_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+    let since_the_epoch = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
 
     let seconds = since_the_epoch.as_secs();
     let days = seconds / 86400;
@@ -24,8 +25,15 @@ fn log_and_print(message: &str) {
     let hours = remaining_seconds / 3600;
     let minutes = (remaining_seconds % 3600) / 60;
     let seconds = remaining_seconds % 60;
-    let human_readable_date = format!("{}-{:02}-{:02} {:02}:{:02}:{:02}",
-        1970 + days / 365, (days % 365) / 30 + 1, days % 30 + 1, hours, minutes, seconds);
+    let human_readable_date = format!(
+        "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+        1970 + days / 365,
+        (days % 365) / 30 + 1,
+        days % 30 + 1,
+        hours,
+        minutes,
+        seconds
+    );
 
     println!("{}", message);
 
@@ -49,13 +57,12 @@ fn log_and_print(message: &str) {
 async fn main() {
     let port = 3005;
 
-    // Check if the port is available
     if TcpListener::bind(("127.0.0.1", port)).is_err() {
         log_and_print(&format!("[Error] Port {} is already in use.", port));
         return;
     }
 
-    log_and_print(&format!("[Starting] {} (:{})", VERSION, port));
+    log_and_print(&format!("[Starting!3] {} (:{})", VERSION, port));
 
     let hello_route = warp::path!("hello" / String)
         .and(warp::header::<String>("user-agent"))
@@ -69,14 +76,6 @@ async fn main() {
         handlers::get_printer_list()
     });
 
-    // let print_route = warp::path("print")
-    //     .and(warp::post())
-    //     .and(warp::body::json())
-    //     .and_then(|body| {
-    //         log_and_print("[Request] /print");
-    //         handlers::print_request(body)
-    //     });
-
     let print_route = warp::path("print")
         .and(warp::post())
         .and(warp::multipart::form())
@@ -85,11 +84,19 @@ async fn main() {
             handlers::print_request(form)
         });
 
-    log_and_print(&format!("[Running process]"));
+    let print_options = warp::path("print").and(warp::options()).map(|| {
+        log_and_print("[Request] OPTIONS /print");
+        warp::reply()
+    });
 
-    let routes = hello_route
-        .or(list_route)
-        .or(print_route);
-        // .or(upload_route);
+    log_and_print("[Running process]");
+
+    let cors = warp::cors()
+        .allow_origin("https://test.ecomenuapp.com")
+        .allow_methods(&[Method::POST, Method::OPTIONS])
+        .allow_headers(vec!["content-type", "token"]);
+
+    let routes = hello_route.or(list_route).or(print_route).with(cors);
+
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 }
