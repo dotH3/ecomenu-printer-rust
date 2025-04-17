@@ -152,6 +152,8 @@ pub async fn print_request(
     //? A este punto del codigo, ya deberiamos de tener el nombre del archivo e impresora
     //? Lo que significa que podemos realizar la impresion
 
+    println!("1");
+
     let gs_cmd = if cfg!(target_os = "windows") {
         "gswin64c"
     } else {
@@ -165,8 +167,8 @@ pub async fn print_request(
             "-sDEVICE=mswinpr2",
             "-sPAPERSIZE=custom",
             "-dFIXEDMEDIA",
-            "-dDEVICEWIDTHPOINTS=165",
-            "-dDEVICEHEIGHTPOINTS=600",
+            // "-dDEVICEWIDTHPOINTS=165",
+            // "-dDEVICEHEIGHTPOINTS=600",
             format!("-sOutputFile=%printer%{}", final_printer_name.unwrap())
                 .to_string()
                 .as_str(),
