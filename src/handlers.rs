@@ -152,7 +152,6 @@ pub async fn print_request(
     //? A este punto del codigo, ya deberiamos de tener el nombre del archivo e impresora
     //? Lo que significa que podemos realizar la impresion
 
-    println!("1");
 
     let gs_cmd = if cfg!(target_os = "windows") {
         "gswin64c"
@@ -160,22 +159,20 @@ pub async fn print_request(
         "gs"
     };
 
+    // println!("4");
     let output = std::process::Command::new(gs_cmd)
-        .args([
-            "-dBATCH",
-            "-dNOPAUSE",
-            "-sDEVICE=mswinpr2",
-            "-sPAPERSIZE=custom",
-            "-dFIXEDMEDIA",
-            // "-dDEVICEWIDTHPOINTS=165",
-            // "-dDEVICEHEIGHTPOINTS=600",
-            format!("-sOutputFile=%printer%{}", final_printer_name.unwrap())
-                .to_string()
-                .as_str(),
-            "-dFitPage",
-            final_pdf_name.as_ref().unwrap(),
-        ])
-        .output();
+    .args([
+        "-dBATCH",
+        "-dNOPAUSE",
+        "-sDEVICE=mswinpr2",
+        "-dFIXEDMEDIA",
+        "-dPDFFitPage=false",
+        "-dDEVICEHEIGHTPOINTS=3276",
+        "-dDEVICEWIDTHPOINTS=165",
+        format!("-sOutputFile=%printer%{}", final_printer_name.unwrap()).as_str(),
+        final_pdf_name.as_ref().unwrap(),
+    ])
+    .output();
 
     match output {
         Ok(out) => {

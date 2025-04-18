@@ -11,7 +11,7 @@ use std::{
 use warp::http::Method;
 use warp::Filter;
 
-const VERSION: &str = "v0.0.6-alpha";
+const VERSION: &str = "v0.0.8-alpha";
 
 fn log_and_print(message: &str) {
     let start = SystemTime::now();
