@@ -1,5 +1,6 @@
 /target
 Cargo.lock
 pdf_*
+*.pdf
 log*
 EcomenuPrinter_Installer*.exe

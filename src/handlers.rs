@@ -24,52 +24,6 @@ pub fn hello(param: String, _agent: String) -> String {
     format!("Hi, {}!", param)
 }
 
-// pub async fn print_request(body: serde_json::Value) -> Result<impl warp::Reply, warp::Rejection> {
-//     let body_printer_name = body.get("printerName");
-//     let _body_pdf = body.get("pdf");
-
-//     if body_printer_name.is_none() {
-//         return bad_request("Missing 'printerName'");
-//     }
-
-//     let printer = get_printer_by_name(body_printer_name.unwrap().as_str().unwrap());
-
-//     if printer.is_none() {
-//         return bad_request("Printer not found");
-//     }
-
-//     let gs_cmd = if cfg!(target_os = "windows") {
-//         "gswin64c"
-//     } else {
-//         "gs"
-//     };
-
-//     log_and_print(&format!("-sOutputFile=%printer%{}", printer.unwrap().system_name));
-
-//     let output = std::process::Command::new(gs_cmd)
-//         .args([
-//             "-dBATCH",
-//             "-dNOPAUSE",
-//             "-sDEVICE=mswinpr2",
-//             "-sPAPERSIZE=custom",
-//             "-dFIXEDMEDIA",
-//             "-dDEVICEWIDTHPOINTS=165",
-//             "-dDEVICEHEIGHTPOINTS=600",
-//             "-sOutputFile=%printer%POS-58",
-//             "-dFitPage",
-//             "ec.pdf",
-//         ])
-//         .output();
-
-//     match output {
-//         Ok(out) if out.status.success() => log_and_print("Printed successfully."),
-//         Ok(out) => log_and_print(&format!("Error: {:?}", String::from_utf8_lossy(&out.stderr))),
-//         Err(e) => log_and_print(&format!("Failed to execute command: {}", e)),
-//     }
-
-//     ok("OK")
-// }
-
 pub async fn print_request(
     form: warp::multipart::FormData,
 ) -> Result<impl warp::Reply, warp::Rejection> {
@@ -154,24 +108,21 @@ pub async fn print_request(
 
 
     let gs_cmd = if cfg!(target_os = "windows") {
-        "gswin64c"
+        "./SumatraPDF-3.4.6-32.exe"
     } else {
         "gs"
     };
 
-    // println!("4");
+    let argumentos = [
+        "-print-to",
+        format!("{}", final_printer_name.unwrap()).as_str(),
+        // "-print-settings",
+        // "2.pdf"
+        final_pdf_name.as_ref().unwrap()
+    ];
+
     let output = std::process::Command::new(gs_cmd)
-    .args([
-        "-dBATCH",
-        "-dNOPAUSE",
-        "-sDEVICE=mswinpr2",
-        "-dFIXEDMEDIA",
-        "-dPDFFitPage=false",
-        "-dDEVICEHEIGHTPOINTS=3276",
-        "-dDEVICEWIDTHPOINTS=165",
-        format!("-sOutputFile=%printer%{}", final_printer_name.unwrap()).as_str(),
-        final_pdf_name.as_ref().unwrap(),
-    ])
+    .args(argumentos)
     .output();
 
     match output {
@@ -179,7 +130,6 @@ pub async fn print_request(
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             if out.status.success() && !stderr.contains("Error") && !stderr.contains("invalid") {
-                let _ = std::fs::remove_file(final_pdf_name.unwrap());
                 ok("Printed successfully")
             } else {
                 log_and_print(&format!("[Error] Ghostscript failed:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
