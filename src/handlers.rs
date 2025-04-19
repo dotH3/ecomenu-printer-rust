@@ -1,4 +1,7 @@
-use crate::{log_and_print, utils::{bad_request, generate_random_pdf_name, ok}};
+use crate::{
+    log_and_print,
+    utils::{bad_request, generate_random_pdf_name, ok},
+};
 use printers::{get_printer_by_name, get_printers};
 use serde_json::json;
 use warp::reply::Json;
@@ -29,6 +32,7 @@ pub async fn print_request(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     log_and_print("Received upload request");
 
+    use dirs;
     use futures::TryStreamExt;
     use std::{
         fs::File,
@@ -36,11 +40,8 @@ pub async fn print_request(
         sync::{Arc, Mutex},
     };
     use warp::Buf;
-    use dirs;
 
-    let app_data_dir = dirs::data_local_dir()
-        .unwrap()
-        .join("EcomenuPrinter");
+    let app_data_dir = dirs::data_local_dir().unwrap().join("EcomenuPrinter");
     std::fs::create_dir_all(&app_data_dir).unwrap();
 
     let pdf_name = Arc::new(Mutex::new(None));
@@ -106,8 +107,7 @@ pub async fn print_request(
     //? A este punto del codigo, ya deberiamos de tener el nombre del archivo e impresora
     //? Lo que significa que podemos realizar la impresion
 
-
-    let gs_cmd = if cfg!(target_os = "windows") {
+    let print_cmd_command = if cfg!(target_os = "windows") {
         "./SumatraPDF-3.4.6-32.exe"
     } else {
         "gs"
@@ -115,15 +115,11 @@ pub async fn print_request(
 
     let argumentos = [
         "-print-to",
-        format!("{}", final_printer_name.unwrap()).as_str(),
-        // "-print-settings",
-        // "2.pdf"
-        final_pdf_name.as_ref().unwrap()
+        final_printer_name.as_ref().unwrap(),
+        final_pdf_name.as_ref().unwrap(),
     ];
 
-    let output = std::process::Command::new(gs_cmd)
-    .args(argumentos)
-    .output();
+    let output = std::process::Command::new(print_cmd_command).args(argumentos).output();
 
     match output {
         Ok(out) => {
@@ -132,8 +128,14 @@ pub async fn print_request(
             if out.status.success() && !stderr.contains("Error") && !stderr.contains("invalid") {
                 ok("Printed successfully")
             } else {
-                log_and_print(&format!("[Error] Ghostscript failed:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr));
-                bad_request(&format!("Ghostscript error:\nSTDOUT: {}\nSTDERR: {}", stdout, stderr))
+                log_and_print(&format!(
+                    "[Error] print failed:\nSTDOUT: {}\nSTDERR: {}",
+                    stdout, stderr
+                ));
+                bad_request(&format!(
+                    "print error:\nSTDOUT: {}\nSTDERR: {}",
+                    stdout, stderr
+                ))
             }
         }
         Err(e) => bad_request(&format!("Failed to execute command: {}", e)),
