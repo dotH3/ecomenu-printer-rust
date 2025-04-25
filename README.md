@@ -1,6 +1,9 @@
-# ecomenu-printer
+<p align="center">
+  <img src="https://saas.ecomenuapp.com/public/ecomenu-logo.jpg" width="200" alt="Ecomenu Logo" style="box-shadow: 0 4px 12px rgba(0,0,0,0.2); opacity: 0.9; border-radius: 12px;" />
+</p>
 
- Native application written in Rust to manage printers through HTTP requests. It’s designed specifically to be integrated with the software Ecomenu, allowing us to print in an efficient and scalable way.
+<h3 align="center">Ecomenu Printer</h3>
+<p align="center">Native application written in Rust to manage printers through HTTP requests. It’s designed specifically to be integrated with the software Ecomenu, allowing us to print in an efficient and scalable way.</p>
 
 ## Features
 
@@ -9,11 +12,10 @@
 - ⚡️ Enhanced performance thanks to Rust.
 - 🔄 Multiplatform: Windows, iOS, and GNU.
 - 🍔 Optimized for integration with **Ecomenu**.
-- 📜 Requires Ghostscript for PDF processing.
 
 ## Endpoints
 
-| Method | Endpoint         | Description                             | Required Form-Data                   |
-|--------|------------------|-----------------------------------------|---------------------------------------|
-| GET    | `/printer-list`  | Lists printers configured in the system.| None                                  |
-| POST   | `/print`         | Prints HTML                             | `printer_name`, `pdf` |
+| Method |    Endpoint     |               Description                |  Required Form-Data   |
+| :----: | :-------------: | :--------------------------------------: | :-------------------: |
+|  GET   | `/printer-list` | Lists printers configured in the system. |         None          |
+|  POST  |    `/print`     |                Prints PDF                | `printer_name`, `pdf` |
